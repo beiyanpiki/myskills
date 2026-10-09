@@ -22,13 +22,25 @@ or more skills at any depth; a skill is any directory containing a `SKILL.md` wi
 
 ```
 git clone --recurse-submodules git@github.com:<you>/myskills.git myskills
+bin/sync-submodules.sh
 ```
 
 For a clone that already exists:
 
 ```
 git submodule update --init --recursive
+bin/sync-submodules.sh
 ```
+
+`bin/sync-submodules.sh` limits each submodule's working tree to the folders holding a `SKILL.md`.
+A submodule references a whole repository, so a skill that lives in a subdirectory otherwise drags
+the rest of that project along; here `skills/gh-stack` keeps only `skills/gh-stack/` and drops
+`cmd/`, `internal/`, `docs/` and the other Go sources. The pinned commit and the fetched objects
+are untouched, and `bin/sync-submodules.sh --full` restores the complete working tree.
+
+Git keeps the sparse-checkout patterns in `.git/modules/`, outside this repository, so a fresh
+clone has to run the script once. Plain `git submodule update --init` afterwards does not expand
+the working tree again.
 
 ## Updating submodules
 
@@ -45,6 +57,7 @@ git commit -m "chore: bump skill submodules"
 
 ```
 bin/add-skill-repo.sh https://github.com/github/gh-stack
+bin/sync-submodules.sh
 ```
 
 The same thing by hand:
