@@ -1,0 +1,4 @@
+[submodule "skills/gh-stack"]
+	path = skills/gh-stack
+	url = https://github.com/github/gh-stack
+	branch = main
