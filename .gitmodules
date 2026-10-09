@@ -2,3 +2,11 @@
 	path = vendor/gh-stack
 	url = https://github.com/github/gh-stack
 	branch = main
+[submodule "vendor/pir"]
+	path = vendor/pir
+	url = https://github.com/beiyanpiki/pir
+	branch = dev
+[submodule "vendor/awesome-copilot"]
+	path = vendor/awesome-copilot
+	url = https://github.com/github/awesome-copilot
+	branch = main
