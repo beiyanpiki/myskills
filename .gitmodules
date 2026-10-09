@@ -1,4 +1,4 @@
-[submodule "skills/gh-stack"]
-	path = skills/gh-stack
+[submodule "vendor/gh-stack"]
+	path = vendor/gh-stack
 	url = https://github.com/github/gh-stack
 	branch = main

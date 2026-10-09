@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# Check out the submodules and keep only the folders holding skills in their working trees.
+# Check out the submodules, trim them to the folders that hold skills, and refresh the skills/
+# links.
 #
-#   bin/sync-submodules.sh          # init/update submodules, trim each one to its skill folders
+#   bin/sync-submodules.sh          # default: trimmed submodules plus the skills/ links
 #   bin/sync-submodules.sh --full   # restore the complete working tree of every submodule
 #
-# A submodule references a whole repository, so a skill that lives in a subdirectory brings the
-# rest of that project along. Sparse-checkout limits each submodule's working tree to the
-# directories containing a SKILL.md. The pinned commit and the fetched objects are unchanged;
-# only the files checked out shrink.
+# Submodules live under vendor/ and reference whole repositories, so a skill kept in a
+# subdirectory would otherwise drag the rest of that project into the checkout. Sparse-checkout
+# limits each submodule's working tree to the directories containing a SKILL.md, and each of those
+# directories is exposed as skills/<skill-name>, which is the layout skill loaders expect.
 #
-# Git keeps sparse-checkout patterns in .git/modules/, which is not part of this repository, so a
-# fresh clone has to run this script once.
+# Git keeps sparse-checkout patterns in .git/modules/, outside this repository, so run this once
+# after cloning. The skills/ links are committed, so they exist without it.
 
 set -euo pipefail
 
@@ -18,22 +19,29 @@ usage() {
   cat >&2 <<'USAGE'
 Usage: bin/sync-submodules.sh [--sparse|--full]
 
-  --sparse  only check out the folders that contain a SKILL.md (default)
+  --sparse  check out only the folders that contain a SKILL.md (default)
   --full    check out every submodule in full
 USAGE
 }
 
+mode=sparse
 case "${1:-}" in
-  ""|--sparse) mode=sparse ;;
+  ""|--sparse) ;;
   --full) mode=full ;;
   *) usage; exit 2 ;;
 esac
 
 cd "$(git rev-parse --show-toplevel)"
 
+mapfile -t submodules < <(
+  git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | cut -d' ' -f2
+)
+
 git submodule update --init --recursive
 
-while read -r path; do
+skill_dirs=()
+
+for path in "${submodules[@]}"; do
   [[ -d $path ]] || continue
 
   if [[ $mode == full ]]; then
@@ -47,8 +55,9 @@ while read -r path; do
     continue
   fi
 
-  mapfile -t dirs < <(git -C "$path" ls-files |
-    sed -n 's|\(^.*\)/SKILL\.md$|\1|p' | sort -u)
+  mapfile -t dirs < <(
+    git -C "$path" ls-files | sed -n 's|\(^.*\)/SKILL\.md$|\1|p' | sort -u
+  )
 
   if (( ${#dirs[@]} == 0 )); then
     echo "skipped:         $path (no SKILL.md)"
@@ -58,8 +67,38 @@ while read -r path; do
   patterns=()
   for dir in "${dirs[@]}"; do
     patterns+=("/$dir/")
+    skill_dirs+=("$path/$dir")
   done
 
   git -C "$path" sparse-checkout set --no-cone "${patterns[@]}"
   echo "sparse checkout: $path -> ${patterns[*]}"
-done < <(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | cut -d' ' -f2)
+done
+
+if [[ $mode == full ]]; then
+  exit 0
+fi
+
+mkdir -p skills
+
+for dir in "${skill_dirs[@]}"; do
+  name=$(basename "$dir")
+  link="skills/$name"
+  target="../$dir"
+
+  if [[ -L $link ]]; then
+    if [[ $(readlink "$link") == "$target" ]]; then
+      echo "link ok:         $link -> $target"
+      continue
+    fi
+    echo "error: $link points at $(readlink "$link"), expected $target" >&2
+    exit 1
+  fi
+
+  if [[ -e $link ]]; then
+    echo "error: $link exists and is not a symlink" >&2
+    exit 1
+  fi
+
+  ln -s "$target" "$link"
+  echo "linked:          $link -> $target"
+done

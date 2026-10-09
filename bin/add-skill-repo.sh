@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Add an upstream repository that ships agent skills, as a git submodule under skills/.
+# Add an upstream repository that ships agent skills, as a git submodule under vendor/.
 #
 #   bin/add-skill-repo.sh <git-url> [name]
 #
 #   <git-url>  clone URL of the upstream repository
-#   [name]     directory name under skills/, defaults to the repository name
+#   [name]     directory name under vendor/, defaults to the repository name
 #
-# The submodule tracks the upstream default branch, so `git submodule update --remote`
-# picks up new commits. Every SKILL.md inside the submodule is printed afterwards.
+# The submodule tracks the upstream default branch, so `git submodule update --remote` picks up
+# new commits. bin/sync-submodules.sh runs at the end to trim the checkout and refresh the
+# skills/ links.
 
 set -euo pipefail
 
@@ -16,7 +17,7 @@ usage() {
 Usage: bin/add-skill-repo.sh <git-url> [name]
 
   <git-url>  clone URL of the upstream repository
-  [name]     directory name under skills/, defaults to the repository name
+  [name]     directory name under vendor/, defaults to the repository name
 USAGE
 }
 
@@ -25,9 +26,10 @@ if [[ $# -lt 1 || $# -gt 2 ]]; then
   exit 2
 fi
 
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 url=$1
 name=${2:-$(basename "${url%.git}")}
-path="skills/$name"
+path="vendor/$name"
 
 cd "$(git rev-parse --show-toplevel)"
 
@@ -43,6 +45,4 @@ else
   git submodule add "$url" "$path"
 fi
 
-echo
-echo "SKILL.md files in $path:"
-git -C "$path" ls-files | grep -E '(^|/)SKILL\.md$' | sed "s|^|  $path/|"
+"$script_dir/sync-submodules.sh"
