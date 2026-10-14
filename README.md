@@ -6,7 +6,8 @@ Agent skills I use, pulled from their upstream repositories as git submodules.
 
 ```
 vendor/<name>/    # git submodule -> upstream repository (partial clone)
-skills/<skill>/   # symlink -> the skill directory inside a submodule
+skills/<skill>/   # symlink -> the skill directory inside a submodule,
+                  # or a first-party skill written in this repository
 ```
 
 Each submodule points at an upstream repository and is named after it. A repository can hold one or
@@ -26,6 +27,16 @@ instead of roughly 100MB.
 | `vendor/gh-stack` | [github/gh-stack](https://github.com/github/gh-stack) | `gh-stack` |
 | `vendor/pir` | [beiyanpiki/pir](https://github.com/beiyanpiki/pir) | `pir` |
 | `vendor/awesome-copilot` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | `git-commit`, `github-issues`, `markdown-to-html` |
+
+## First-party skills
+
+Skills written in this repository instead of pulled from an upstream submodule live directly under
+`skills/` as real directories. They load the same way and follow the same convention: a directory
+containing a `SKILL.md` with `name` and `description` front matter.
+
+| Skill | What it covers |
+| --- | --- |
+| `skills/work-with-pr` | Delivering work as a pull request in any repository: splitting a task into atomic PRs, one isolated git worktree per PR, an independent review gate over the branch diff, the CI verification loop, then merge and worktree cleanup. Host and review-tool agnostic. |
 
 ## Setup
 
